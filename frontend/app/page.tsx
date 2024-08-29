@@ -1,10 +1,11 @@
 import Link from 'next/link';
+import {followings} from '../../backend/model/followings'
 
 const Home: React.FC = () => {
   // Replace these with actual data
   const firstName = "John";
   const numFollowing = 52;
-  const followers = Array.from({ length: 50 }, (_, i) => `Follower ${i + 1}`);
+  // const followers = Array.from({ length: 50 }, (_, i) => `Follower ${i + 1}`);
 
   return (
     <div className="container mx-auto p-4">
@@ -34,19 +35,19 @@ const Home: React.FC = () => {
             Show All
           </button>
           <div className="scrollable-box mt-4" id="followers-list">
-            {followers.slice(0, 15).map((follower, index) => (
-              <div key={index} className="py-2">{follower}</div>
+            {followings.slice(0, 15).map((following, index) => (
+              <div key={index} className="py-2">{following.username}</div>
             ))}
             {/* Add more followers here */}
             <div className="hidden" id="more-followers">
-              {followers.slice(15).map((follower, index) => (
-                <div key={index + 15} className="py-2">{follower}</div>
+              {followings.slice(15).map((following, index) => (
+                <div key={index + 15} className="py-2">{following.username}</div>
               ))}
             </div>
           </div>
         </div>
       </main>
-      <script src="/collapsible.js" />
+      {/* <script src="/collapsible.js" /> */}
     </div>
   );
 };
