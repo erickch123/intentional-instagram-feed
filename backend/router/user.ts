@@ -235,7 +235,7 @@ router.patch('/:username', async (req: Request, res: Response) => {
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '#/components/schemas/User'
+ *                   $ref: '../model/User'
  *       404:
  *         description: User not found
  */
@@ -288,4 +288,81 @@ router.get('/', async (req: Request, res: Response, ) => {
       res.status(500).json({ message: 'Server error' });
   }
 });
+
+
+/**
+ * @swagger
+ * /users/categories/{username}:
+ *   patch:
+ *     summary: Add a category to a user
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The username of the user to update
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category:
+ *                 type: string
+ *                 description: The category to add
+ *     responses:
+ *       200:
+ *         description: Category added successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '../model/User'
+ *       404:
+ *         description: User not found
+ *       400:
+ *         description: Invalid input
+ *       500:
+ *         description: Internal Server Error
+ */
+router.patch('/categories/:username/', async (req: Request, res: Response) => {
+  const username = req.params.username;
+  const { category } = req.body;
+
+  try {
+    if (!category) {
+      return res.status(400).json({ statusCode: 400, message: 'Category is required' });
+    }
+
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ statusCode: 404, message: 'User not found' });
+    }
+
+    // Check if the category already exists
+    if (!user.categories.includes(category)) {
+      user.categories.push(category);
+      await user.save();
+      return res.status(200).json({ statusCode: 200, message: 'Category added successfully', data: user });
+    } else {
+      return res.status(400).json({ statusCode: 400, message: 'Category already exists' });
+    }
+
+  } catch (error) {
+    console.error('Error adding category:', error);
+    res.status(500).json({ statusCode: 500, message: 'Server error' });
+  }
+});
+
+
 export default router;

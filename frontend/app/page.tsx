@@ -1,11 +1,127 @@
+'use client'
 import Link from 'next/link';
 import {followings} from '../../backend/model/followings'
+import { useState, useEffect } from 'react';
+import useUserData from './hooks/useUserData';
+
+
+
+
+// let apiurl = "http://localhost:5000";
+
+// interface Following {
+//   username: string;
+//   full_name: string;
+//   category: string[];
+//   description: string;
+// }
+
+// interface User {
+//   _id: string;
+//   name: string;
+//   username: string;
+//   followings: Following[];
+//   categories: string[];
+// }
 
 const Home: React.FC = () => {
+
+
+
+
   // Replace these with actual data
-  const firstName = "John";
-  const numFollowing = 52;
+  // const firstName = "John";
+  // const numFollowing = 52;
+
+  const [firstName, setFirstName] = useState<string>('John');
+  const [numFollowing, setNumFollowing] = useState<number>(52);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [newCategory, setNewCategory] = useState('');
+
+
+  const { user, loading, error } = useUserData('erickkkk_photos');
+
   // const followers = Array.from({ length: 50 }, (_, i) => `Follower ${i + 1}`);
+
+  const renderFollowings = () => {
+    if (!user) return null;
+
+    const indexOfLastItem = currentPage * itemsPerPage;
+    const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+    const currentFollowings = user.followings.slice(indexOfFirstItem, indexOfLastItem);
+
+
+    return (
+      <>
+        <div className="mt-8">
+          <h2 className="text-3xl font-bold">Followings</h2>
+          <ul className="mt-4 space-y-2">
+            {currentFollowings.map((following, index) => (
+              <li key={index} className="border p-2 rounded">
+                <h3 className="font-semibold">{following.username}</h3>
+                <p>{following.full_name || '(No full name)'}</p>
+                <p>Categories: {following.category.join(', ') || '(No categories)'}</p>
+                <p>Description: {following.description || '(No description)'}</p>
+              </li>
+            ))}
+          </ul>
+        </div>
+        <Pagination
+          totalItems={user.followings.length}
+          currentPage={currentPage}
+          itemsPerPage={itemsPerPage}
+          onPageChange={(pageNumber) => setCurrentPage(pageNumber)}
+        />
+      </>
+    );
+  };
+
+  const Pagination = ({ totalItems, currentPage, itemsPerPage, onPageChange }: {
+    totalItems: number;
+    currentPage: number;
+    itemsPerPage: number;
+    onPageChange: (pageNumber: number) => void;
+  }) => {
+    const pageNumbers = [];
+    for (let i = 1; i <= Math.ceil(totalItems / itemsPerPage); i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="pagination mt-4 flex justify-center">
+        {pageNumbers.map(number => (
+          <button
+            key={number}
+            onClick={() => onPageChange(number)}
+            className={`px-4 py-2 mx-1 ${currentPage === number ? 'bg-blue-500 text-white' : 'bg-gray-200'} rounded`}
+          >
+            {number}
+          </button>
+        ))}
+      </div>
+    );
+  };
+
+  // const renderCategories = () => {
+  //   if (!user || !user.categories.length) return null;
+
+  //   return (
+  //     <div className="mt-8">
+  //       <h2 className="text-3xl font-bold">Categories</h2>
+  //       <ul className="mt-4 space-y-2">
+  //         {user.categories.map((category, index) => (
+  //           <li key={index} className="border p-2 rounded">
+  //             <p>{category}</p>
+  //           </li>
+  //         ))}
+  //       </ul>
+  //     </div>
+  //   );
+  // };
+
+  if (loading) return <div>Loading...</div>;
+  if (error) return <div>Error: {error}</div>;
 
   return (
     <div className="container mx-auto p-4">
@@ -45,6 +161,29 @@ const Home: React.FC = () => {
               ))}
             </div>
           </div>
+          <main className="mt-8">
+          {user ? (
+            <>
+              <h2 className="text-2xl font-semibold">Welcome, {user.name}!</h2>
+              <p className="mt-2">Username: @{user.username}</p>
+              {renderFollowings()}
+            </>
+          ) : (
+            <div>Loading...</div>
+          )}
+
+          {/* {user ? (
+            <>
+              <h2 className="text-2xl font-semibold">Welcome, {user.name}!</h2>
+              <p className="mt-2">Username: @{user.username}</p>
+              {renderFollowings()}
+              {renderCategories()}
+            </>
+          ) : (
+            <div>Loading...</div>
+          )} */}
+        </main>
+
         </div>
       </main>
       {/* <script src="/collapsible.js" /> */}

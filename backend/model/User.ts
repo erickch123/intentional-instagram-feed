@@ -9,6 +9,7 @@ interface IUser extends Document {
   name: string;
   username: string;
   followings: IFollowing[];
+  categories: string[];
 }
 
 
@@ -46,6 +47,10 @@ const UserSchema: Schema = new Schema({
   followings: {
     type: [FollowingSchema],
     default: [],
+  },
+  categories: {
+    type: [String],  // Array of strings
+    default: [],     // Default empty array
   },
 });
 

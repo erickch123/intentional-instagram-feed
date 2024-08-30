@@ -7,6 +7,7 @@ import path from 'path';
 import passport from 'passport';
 import swaggerJsdoc from 'swagger-jsdoc';
 import swaggerUi from 'swagger-ui-express';
+import cors from 'cors';
 
 import {swaggerOptions} from './swagger';
 
@@ -19,6 +20,7 @@ const app = express();
 connectDB()
 
 // Middleware
+app.use(cors());
 app.use(express.json());
 app.use(passport.initialize());
 
