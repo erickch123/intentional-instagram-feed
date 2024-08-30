@@ -7,10 +7,10 @@ interface IFollowing {
 
 interface IUser extends Document {
   name: string;
-  email: string;
-  password: string;
+  username: string;
   followings: IFollowing[];
 }
+
 
 const FollowingSchema: Schema = new Schema({
   username: {
@@ -38,15 +38,11 @@ const UserSchema: Schema = new Schema({
     type: String,
     required: true,
   },
-  email: {
+  username: {
     type: String,
     required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
+    unique: true
+},
   followings: {
     type: [FollowingSchema],
     default: [],

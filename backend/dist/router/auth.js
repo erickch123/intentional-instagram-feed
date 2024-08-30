@@ -12,7 +12,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.configurePassport = configurePassport;
 const express_1 = require("express");
 const axios_1 = __importDefault(require("axios"));
 const passport_1 = __importDefault(require("passport"));
@@ -29,29 +28,32 @@ const CLIENT_ID = process.env.INSTAGRAM_CLIENT_ID;
 const CLIENT_SECRET = process.env.INSTAGRAM_CLIENT_SECRET;
 const REDIRECT_URI = process.env.INSTAGRAM_REDIRECT_URI || "";
 const router = (0, express_1.Router)();
-function configurePassport() {
-    passport_1.default.use(new passport_instagram_1.Strategy({
-        clientID: CLIENT_ID || '',
-        clientSecret: CLIENT_SECRET || '',
-        callbackURL: '/callback'
-    }, (accessToken, refreshToken, profile, cb) => {
-        // Here you would typically save the user to your database
-        // For this example, we'll just pass the profile to the next middleware
-        cb(null, {
-            accessToken: accessToken,
-            refreshToken: refreshToken,
-        });
-    }));
-    passport_1.default.serializeUser((user, done) => {
-        done(null, user);
+passport_1.default.serializeUser((user, done) => {
+    done(null, user);
+});
+passport_1.default.deserializeUser((obj, done) => {
+    done(null, obj);
+});
+passport_1.default.use(new passport_instagram_1.Strategy({
+    clientID: CLIENT_ID || '',
+    clientSecret: CLIENT_SECRET || '',
+    callbackURL: REDIRECT_URI
+    // i think it shld be server la but facebook disalow this
+}, function (accessToken, refreshToken, profile, done) {
+    // asynchronous verification, for effect...
+    process.nextTick(function () {
+        // To keep the example simple, the user's Instagram profile is returned to
+        // represent the logged-in user.  In a typical application, you would want
+        // to associate the Instagram account with a user record in your database,
+        // and return that user instead.
+        return done(null, profile);
     });
-    passport_1.default.deserializeUser((obj, done) => {
-        done(null, obj);
-    });
-}
-// Step 1: Redirect user to Instagram's OAuth 2.0 server
-configurePassport();
-router.get('/', passport_1.default.authenticate('instagram', { session: false })),
+}));
+router.get('/', passport_1.default.authenticate('instagram', { session: false }), (req, res) => {
+    console.log('Instagram authentication route was called');
+    // Continue with your response handling
+    res.send('Authentication successful');
+}),
     router.get('/callback', passport_1.default.authenticate('instagram', {
         // failureRedirect: '/login',
         session: false,
