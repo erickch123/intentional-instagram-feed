@@ -364,5 +364,96 @@ router.patch('/categories/:username/', async (req: Request, res: Response) => {
   }
 });
 
+// New endpoint to add categories to FollowingSchema
+/**
+ * @swagger
+ * /users/followings/{username}/{followingUsername}:
+ *   patch:
+ *     summary: Add a category to a following if it exists in user's categories
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The username of the user
+ *       - in: path
+ *         name: followingUsername
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The username of the following
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category:
+ *                 type: string
+ *                 description: The category to add
+ *     responses:
+ *       200:
+ *         description: Category added to following successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '../model/User'
+ *       400:
+ *         description: Category must exist in user categories or invalid input
+ *       404:
+ *         description: User or following not found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.patch('/followings/:username/:followingUsername', async (req: Request, res: Response) => {
+  const { username, followingUsername } = req.params;
+  const { category } = req.body;
+
+  try {
+    if (!category) {
+      return res.status(400).json({ statusCode: 400, message: 'Category is required' });
+    }
+
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ statusCode: 404, message: 'User not found' });
+    }
+
+    if (!user.categories.includes(category)) {
+      return res.status(400).json({ statusCode: 400, message: 'Category must exist in user categories' });
+    }
+    const following = user.followings.find(f => f.username === followingUsername);
+
+    if (!following) {
+      return res.status(404).json({ statusCode: 404, message: 'Following not found' });
+    }
+
+    if (following.category.includes(category)) {
+      return res.status(400).json({ statusCode: 400, message: 'Category already exists in following' });
+    }
+
+    following.category.push(category);
+    await user.save();
+
+    res.status(200).json({ statusCode: 200, message: 'Category added to following successfully', data: user });
+  } catch (err) {
+    console.error('Error adding category to following:', err);
+    res.status(500).json({ statusCode: 500, message: 'Server error' });
+  }
+});
+
+
+
 
 export default router;

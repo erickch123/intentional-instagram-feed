@@ -5,51 +5,61 @@ import { useState, useEffect } from 'react';
 import useUserData from './hooks/useUserData';
 
 
-
-
-// let apiurl = "http://localhost:5000";
-
-// interface Following {
-//   username: string;
-//   full_name: string;
-//   category: string[];
-//   description: string;
-// }
-
-// interface User {
-//   _id: string;
-//   name: string;
-//   username: string;
-//   followings: Following[];
-//   categories: string[];
-// }
-
 const Home: React.FC = () => {
 
-
-
-
-  // Replace these with actual data
-  // const firstName = "John";
-  // const numFollowing = 52;
-
-  const [firstName, setFirstName] = useState<string>('John');
-  const [numFollowing, setNumFollowing] = useState<number>(52);
   const [currentPage, setCurrentPage] = useState(1);
+  const [newCategory, setNewCategory] = useState<{ [key: string]: string }>({});
+  const [followingUsername, setFollowingUsername] = useState<string>('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [newCategory, setNewCategory] = useState('');
+  const [errorMessage, setErrorMessage] = useState<string>('');
 
 
-  const { user, loading, error } = useUserData('erickkkk_photos');
+
+  const { user, loading, error,setUser } = useUserData('erickkkk_photos');
 
   // const followers = Array.from({ length: 50 }, (_, i) => `Follower ${i + 1}`);
 
+
+  const handleAddCategoryToFollowing = async (followingUsername: string) => {
+    if (!newCategory[followingUsername] || newCategory[followingUsername].trim() === '') {
+      setErrorMessage('Category is required.');
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/users/followings/${user?.username}/${followingUsername}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ category: newCategory[followingUsername] }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to add category to following');
+      }
+
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      setNewCategory({ ...newCategory, [followingUsername]: '' });
+      setErrorMessage(''); // Clear error message on success
+    } catch (err) {
+      if (err instanceof Error) {
+        setErrorMessage(err.message);
+      } else {
+        setErrorMessage('An unknown error occurred.');
+      }
+    }
+  };
   const renderFollowings = () => {
     if (!user) return null;
 
+    const followings = user.followings || [];
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
-    const currentFollowings = user.followings.slice(indexOfFirstItem, indexOfLastItem);
+    const currentFollowings = followings.slice(indexOfFirstItem, indexOfLastItem);
+
 
 
     return (
@@ -58,21 +68,40 @@ const Home: React.FC = () => {
           <h2 className="text-3xl font-bold">Followings</h2>
           <ul className="mt-4 space-y-2">
             {currentFollowings.map((following, index) => (
-              <li key={index} className="border p-2 rounded">
-                <h3 className="font-semibold">{following.username}</h3>
-                <p>{following.full_name || '(No full name)'}</p>
-                <p>Categories: {following.category.join(', ') || '(No categories)'}</p>
-                <p>Description: {following.description || '(No description)'}</p>
-              </li>
+            <li key={index} className="border p-2 rounded flex justify-between items-start">
+            <div>
+              <h3 className="font-semibold">{following.username}</h3>
+              <p>{following.full_name || '(No full name)'}</p>
+              <p>Categories: {following.category.join(', ') || '(No categories)'}</p>
+              <p>Description: {following.description || '(No description)'}</p>
+            </div>
+            <div className="ml-4 flex flex-col items-start">
+              <input
+                type="text"
+                value={newCategory[following.username] || ''}
+                onChange={(e) => setNewCategory({ ...newCategory, [following.username]: e.target.value })}
+                placeholder="Add new category"
+                className="border p-2 rounded text-black mb-2"
+              />
+              <button
+                onClick={() => handleAddCategoryToFollowing(following.username)}
+                className="bg-blue-500 text-white p-2 rounded"
+              >
+                Add
+              </button>
+            </div>
+          </li>
             ))}
           </ul>
         </div>
-        <Pagination
-          totalItems={user.followings.length}
-          currentPage={currentPage}
-          itemsPerPage={itemsPerPage}
-          onPageChange={(pageNumber) => setCurrentPage(pageNumber)}
-        />
+        {user.followings && (
+          <Pagination
+            totalItems={user.followings.length}
+            currentPage={currentPage}
+            itemsPerPage={itemsPerPage}
+            onPageChange={(pageNumber) => setCurrentPage(pageNumber)}
+          />
+)}
       </>
     );
   };
@@ -103,22 +132,6 @@ const Home: React.FC = () => {
     );
   };
 
-  // const renderCategories = () => {
-  //   if (!user || !user.categories.length) return null;
-
-  //   return (
-  //     <div className="mt-8">
-  //       <h2 className="text-3xl font-bold">Categories</h2>
-  //       <ul className="mt-4 space-y-2">
-  //         {user.categories.map((category, index) => (
-  //           <li key={index} className="border p-2 rounded">
-  //             <p>{category}</p>
-  //           </li>
-  //         ))}
-  //       </ul>
-  //     </div>
-  //   );
-  // };
 
   if (loading) return <div>Loading...</div>;
   if (error) return <div>Error: {error}</div>;
@@ -136,55 +149,48 @@ const Home: React.FC = () => {
         </ul>
       </nav>
       <main className="mt-8">
-        <h2 className="text-2xl font-semibold">Welcome to the Main Page</h2>
-        <p className="mt-2">This is the main content of the page.</p>
-        <div className="mt-4">
-          <p className="text-lg">Hi {firstName}</p>
-          <p className="text-lg">Following Number: {numFollowing}</p>
-        </div>
-        <div className="mt-8">
-          <h2 className="text-3xl font-bold">Follower List</h2>
-          <button
-            id="toggle-followers"
-            className="mt-4 px-4 py-2 bg-blue-500 text-white rounded"
-          >
-            Show All
-          </button>
-          <div className="scrollable-box mt-4" id="followers-list">
-            {followings.slice(0, 15).map((following, index) => (
-              <div key={index} className="py-2">{following.username}</div>
-            ))}
-            {/* Add more followers here */}
-            <div className="hidden" id="more-followers">
-              {followings.slice(15).map((following, index) => (
-                <div key={index + 15} className="py-2">{following.username}</div>
-              ))}
-            </div>
-          </div>
+       
+       
           <main className="mt-8">
           {user ? (
             <>
               <h2 className="text-2xl font-semibold">Welcome, {user.name}!</h2>
               <p className="mt-2">Username: @{user.username}</p>
               {renderFollowings()}
+              <div className="mt-4">
+                <input
+                  type="text"
+                  value={newCategory[followingUsername] || ''}
+                  onChange={(e) => setNewCategory({ ...newCategory, [followingUsername]: e.target.value })}
+                  placeholder="Add new category"
+                  className="border p-2 rounded text-black"
+                />
+                <input
+                  type="text"
+                  value={followingUsername}
+                  onChange={(e) => setFollowingUsername(e.target.value)}
+                  placeholder="Following username"
+                  className="border p-2 rounded ml-2 text-black"
+                />
+                <button
+                  onClick={() => handleAddCategoryToFollowing(followingUsername)}
+                  className="ml-2 bg-blue-500 text-white p-2 rounded"
+                >
+                  Add Category to Following
+                </button>
+              </div>
+              {errorMessage && (
+              <div className="mt-4 p-2 bg-red-500 text-white rounded">
+                {errorMessage}
+              </div>
+            )}
             </>
           ) : (
             <div>Loading...</div>
           )}
 
-          {/* {user ? (
-            <>
-              <h2 className="text-2xl font-semibold">Welcome, {user.name}!</h2>
-              <p className="mt-2">Username: @{user.username}</p>
-              {renderFollowings()}
-              {renderCategories()}
-            </>
-          ) : (
-            <div>Loading...</div>
-          )} */}
         </main>
 
-        </div>
       </main>
       {/* <script src="/collapsible.js" /> */}
     </div>

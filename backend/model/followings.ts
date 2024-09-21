@@ -1,3 +1,5 @@
+// Examples that I extracted from console inspect and run script
+
 export const followings = [
     {
     "username": "aheluye",

@@ -3,6 +3,8 @@ import mongoose, { Document, Schema } from 'mongoose';
 interface IFollowing {
   username: string;
   full_name: string;
+  category: string[];
+  description: string;
 }
 
 interface IUser extends Document {
