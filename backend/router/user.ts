@@ -453,6 +453,156 @@ router.patch('/followings/:username/:followingUsername', async (req: Request, re
   }
 });
 
+// Delete a category from a user's categories
+/**
+ * @swagger
+ * /users/categories/{username}:
+ *   delete:
+ *     summary: Delete a category from a user's categories
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The username of the user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               category:
+ *                 type: string
+ *                 description: The category to delete
+ *     responses:
+ *       200:
+ *         description: Category deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '../model/User'
+ *       404:
+ *         description: User or category not found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.delete('/categories/:username', async (req: Request, res: Response) => {
+  const username = req.params.username;
+  const { category } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ statusCode: 404, message: 'User not found' });
+    }
+
+    const categoryIndex = user.categories.indexOf(category);
+    if (categoryIndex === -1) {
+      return res.status(404).json({ statusCode: 404, message: 'Category not found' });
+    }
+
+    user.categories.splice(categoryIndex, 1);
+    await user.save();
+
+    res.status(200).json({ statusCode: 200, message: 'Category deleted successfully', data: user });
+  } catch (error) {
+    console.error('Error deleting category:', error);
+    res.status(500).json({ statusCode: 500, message: 'Server error' });
+  }
+});
+
+// Rename a category
+/**
+ * @swagger
+ * /users/categories/{username}/rename:
+ *   patch:
+ *     summary: Rename a category
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: username
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The username of the user
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               oldCategory:
+ *                 type: string
+ *                 description: The current name of the category
+ *               newCategory:
+ *                 type: string
+ *                 description: The new name of the category
+ *     responses:
+ *       200:
+ *         description: Category renamed successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                 message:
+ *                   type: string
+ *                 data:
+ *                   $ref: '../model/User'
+ *       404:
+ *         description: User or category not found
+ *       500:
+ *         description: Internal Server Error
+ */
+router.patch('/categories/:username/rename', async (req: Request, res: Response) => {
+  const username = req.params.username;
+  const { oldCategory, newCategory } = req.body;
+
+  try {
+    const user = await User.findOne({ username });
+
+    if (!user) {
+      return res.status(404).json({ statusCode: 404, message: 'User not found' });
+    }
+
+    const categoryIndex = user.categories.indexOf(oldCategory);
+    if (categoryIndex === -1) {
+      return res.status(404).json({ statusCode: 404, message: 'Category not found' });
+    }
+
+    user.categories[categoryIndex] = newCategory;
+
+    // Update the category in followings
+    user.followings.forEach(following => {
+      const followingCategoryIndex = following.category.indexOf(oldCategory);
+      if (followingCategoryIndex !== -1) {
+        following.category[followingCategoryIndex] = newCategory;
+      }
+    });
+
+    await user.save();
+
+    res.status(200).json({ statusCode: 200, message: 'Category renamed successfully', data: user });
+  } catch (error) {
+    console.error('Error renaming category:', error);
+    res.status(500).json({ statusCode: 500, message: 'Server error' });
+  }
+});
+
 
 
 

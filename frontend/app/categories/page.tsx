@@ -7,6 +7,8 @@ const Categories: React.FC = () => {
   const { user, loading, error, setUser } = useUserData('erickkkk_photos');
   const [newCategory, setNewCategory] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [renameCategory, setRenameCategory] = useState<string>('');
+  const [categoryToRename, setCategoryToRename] = useState<string | null>(null);
 
 
   const handleAddCategory = async () => {
@@ -46,6 +48,30 @@ const Categories: React.FC = () => {
     setSelectedCategory(category);
   };
 
+  const handleRenameCategory = async () => {
+    if (!categoryToRename || renameCategory.trim() === '') return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/users/categories/${user?.username}/rename`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ oldCategory: categoryToRename, newCategory: renameCategory }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to rename category');
+      }
+
+      const updatedUser = await response.json();
+      setUser(updatedUser);
+      setCategoryToRename(null);
+      setRenameCategory('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
   const renderCategories = () => {
     if (!user || !user.categories.length) return null;
 
@@ -54,9 +80,34 @@ const Categories: React.FC = () => {
         <h2 className="text-3xl font-bold">Categories</h2>
         <ul className="mt-4 space-y-2">
           {user.categories.map((category, index) => (
-            <li key={index} className="border p-2 rounded cursor-pointer" onClick={() => handleCategoryClick(category)}>
-            <p>{category}</p>
-          </li>
+            <li key={index} className="border p-2 rounded flex justify-between items-center">
+              <p>{category}</p>
+              <div className="flex items-center">
+                <button
+                  onClick={() => setCategoryToRename(category)}
+                  className="ml-2 bg-yellow-500 text-white p-1 rounded"
+                >
+                  Rename
+                </button>
+                {categoryToRename === category && (
+                  <div className="ml-2 flex items-center">
+                    <input
+                      type="text"
+                      value={renameCategory}
+                      onChange={(e) => setRenameCategory(e.target.value)}
+                      placeholder="Rename category"
+                      className="border p-2 rounded text-black"
+                    />
+                    <button
+                      onClick={handleRenameCategory}
+                      className="ml-2 bg-green-500 text-white p-2 rounded"
+                    >
+                      Rename
+                    </button>
+                  </div>
+                )}
+              </div>
+            </li>
           ))}
         </ul>
       </div>
@@ -76,10 +127,14 @@ const Categories: React.FC = () => {
         <ul className="mt-4 space-y-2">
           {followingsByCategory.map((following, index) => (
             <li key={index} className="border p-2 rounded">
-              <h3 className="font-semibold">{following.username}</h3>
-              <p>{following.full_name || '(No full name)'}</p>
+              <h3 className="font-semibold">  
+                <a href={`https://instagram.com/${following.username}`} target="_blank" rel="noopener noreferrer">
+                {following.username}
+                </a>
+              </h3>
+              {/* <p>{following.full_name || '(No full name)'}</p>
               <p>Categories: {following.category.join(', ') || '(No categories)'}</p>
-              <p>Description: {following.description || '(No description)'}</p>
+              <p>Description: {following.description || '(No description)'}</p> */}
             </li>
           ))}
         </ul>
@@ -121,6 +176,7 @@ const Categories: React.FC = () => {
             Add Category
           </button>
         </div>
+        
       </main>
     </div>
   );

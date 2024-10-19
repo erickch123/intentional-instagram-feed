@@ -11,7 +11,7 @@ const Home: React.FC = () => {
   const [newCategory, setNewCategory] = useState<{ [key: string]: string }>({});
   const [followingUsername, setFollowingUsername] = useState<string>('');
   const [itemsPerPage, setItemsPerPage] = useState(10);
-  const [errorMessage, setErrorMessage] = useState<string>('');
+  const [errorMessages, setErrorMessages] = useState<{ [key: string]: string }>({});
 
 
 
@@ -22,7 +22,7 @@ const Home: React.FC = () => {
 
   const handleAddCategoryToFollowing = async (followingUsername: string) => {
     if (!newCategory[followingUsername] || newCategory[followingUsername].trim() === '') {
-      setErrorMessage('Category is required.');
+      setErrorMessages({ ...errorMessages, [followingUsername]: 'Category is required.' });
       return;
     }
 
@@ -43,12 +43,12 @@ const Home: React.FC = () => {
       const updatedUser = await response.json();
       setUser(updatedUser);
       setNewCategory({ ...newCategory, [followingUsername]: '' });
-      setErrorMessage(''); // Clear error message on success
+      setErrorMessages({ ...errorMessages, [followingUsername]: '' }); // Clear error message on success
     } catch (err) {
       if (err instanceof Error) {
-        setErrorMessage(err.message);
+        setErrorMessages({ ...errorMessages, [followingUsername]: err.message });
       } else {
-        setErrorMessage('An unknown error occurred.');
+        setErrorMessages({ ...errorMessages, [followingUsername]: 'An unknown error occurred.' });
       }
     }
   };
@@ -70,7 +70,11 @@ const Home: React.FC = () => {
             {currentFollowings.map((following, index) => (
             <li key={index} className="border p-2 rounded flex justify-between items-start">
             <div>
-              <h3 className="font-semibold">{following.username}</h3>
+              <h3 className="font-semibold">
+              <a href={`https://instagram.com/${following.username}`} target="_blank" rel="noopener noreferrer">
+    {following.username}
+  </a>
+                </h3>
               <p>{following.full_name || '(No full name)'}</p>
               <p>Categories: {following.category.join(', ') || '(No categories)'}</p>
               <p>Description: {following.description || '(No description)'}</p>
@@ -89,6 +93,12 @@ const Home: React.FC = () => {
               >
                 Add
               </button>
+
+              {errorMessages[following.username] && (
+                    <div className="mt-4 p-2 bg-red-500 text-white rounded">
+                      {errorMessages[following.username]}
+                    </div>
+                  )}
             </div>
           </li>
             ))}
@@ -157,33 +167,7 @@ const Home: React.FC = () => {
               <h2 className="text-2xl font-semibold">Welcome, {user.name}!</h2>
               <p className="mt-2">Username: @{user.username}</p>
               {renderFollowings()}
-              <div className="mt-4">
-                <input
-                  type="text"
-                  value={newCategory[followingUsername] || ''}
-                  onChange={(e) => setNewCategory({ ...newCategory, [followingUsername]: e.target.value })}
-                  placeholder="Add new category"
-                  className="border p-2 rounded text-black"
-                />
-                <input
-                  type="text"
-                  value={followingUsername}
-                  onChange={(e) => setFollowingUsername(e.target.value)}
-                  placeholder="Following username"
-                  className="border p-2 rounded ml-2 text-black"
-                />
-                <button
-                  onClick={() => handleAddCategoryToFollowing(followingUsername)}
-                  className="ml-2 bg-blue-500 text-white p-2 rounded"
-                >
-                  Add Category to Following
-                </button>
-              </div>
-              {errorMessage && (
-              <div className="mt-4 p-2 bg-red-500 text-white rounded">
-                {errorMessage}
-              </div>
-            )}
+              
             </>
           ) : (
             <div>Loading...</div>

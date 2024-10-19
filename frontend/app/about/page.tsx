@@ -15,7 +15,7 @@ const About: React.FC = () => {
       </nav>
       <main className="mt-8">
         <h2 className="text-2xl font-semibold">About Us</h2>
-        <p className="mt-2">This page provides information about us.</p>
+        <p className="mt-2">IntentionalGram is built as a passion project of myself for me to categorise my instagram followings hence I can use instagram more intentionally. Sometimes, I want to intentionally just exploring the topics that I want and the problem with instagram algorithm today is it can show everything even accounts that you dont follow.</p>
       </main>
     </div>
   );
