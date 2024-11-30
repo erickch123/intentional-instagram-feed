@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 
-interface Category {
+export interface Category {
   id: string;
   name: string;
 }
@@ -8,7 +8,7 @@ interface Category {
 interface Following {
   username: string;
   full_name: string;
-  category: string[];
+  categories: Category[];
   description: string;
 }
 
@@ -17,12 +17,12 @@ interface User {
   name: string;
   username: string;
   followings: Following[];
-  categories: string[];
+  categories: Category[];
 }
 
 const apiurl = "http://localhost:5000";
 
-const useUserData = (username: string) => {
+export const useUserData = (username: string) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,5 +52,3 @@ const useUserData = (username: string) => {
 
   return { user, loading, error, setUser };
 };
-
-export default useUserData;

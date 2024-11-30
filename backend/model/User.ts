@@ -1,59 +1,73 @@
-import mongoose, { Document, Schema } from 'mongoose';
+import mongoose, { Document, Schema, Types } from 'mongoose';
+import { ICategory } from './Category';
 
 interface IFollowing {
+  instagramUserID: string;
   username: string;
-  full_name: string;
-  category: string[];
+  fullName?: string; // Optional field
+  categories: Types.ObjectId[]; // References to Category
   description: string;
 }
 
 interface IUser extends Document {
-  name: string;
+  instagramUserID: string; // Required field
+  fullName?: string; // Optional field
   username: string;
   followings: IFollowing[];
-  categories: string[];
+  categories: ICategory[];
 }
 
 
 const FollowingSchema: Schema = new Schema({
+  instagramUserID: {
+    type: String,
+    required: true,
+  },
   username: {
     type: String,
     required: true,
   },
-  full_name: {
+  fullName: {
     type: String,
     required: false,
   },
-  category: {
-    type: [String],  // Array of strings where users define their own categories
-    required: false,
-    default: [],
-  },
+  categories: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Category',
+    },
+  ],
   description: {
     type: String,
     required: false,
     default: '',
   },
 });
-
 const UserSchema: Schema = new Schema({
-  name: {
+  instagramUserID: {
     type: String,
     required: true,
+    unique: true,
+  },
+  fullName: {
+    type: String,
+    required: false,
   },
   username: {
     type: String,
     required: true,
-    unique: true
-},
+    unique: true,
+  },
   followings: {
     type: [FollowingSchema],
     default: [],
   },
-  categories: {
-    type: [String],  // Array of strings
-    default: [],     // Default empty array
-  },
+  categories: [
+    {
+      type: Schema.Types.ObjectId,
+      ref: 'Category',
+    },
+  ],
 });
 
 export default mongoose.model<IUser>('User', UserSchema);

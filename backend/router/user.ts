@@ -1,7 +1,9 @@
 import express, { Request, Response } from 'express';
 import User from '../model/User';
-const router = express.Router();
+import mongoose  from 'mongoose';
+import Category, { ICategory } from '../model/Category';
 
+const router = express.Router();
 // Example route to create a new user with followings
 /**
  * @swagger
@@ -16,7 +18,9 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             properties:
- *               name:
+ *               instagramUserID:
+ *                 type: string
+ *               fullName:
  *                 type: string
  *               username:
  *                 type: string
@@ -25,11 +29,13 @@ const router = express.Router();
  *                 items:
  *                   type: object
  *                   properties:
+ *                     instagramUserID:
+ *                       type: string
  *                     username:
  *                       type: string
- *                     full_name:
+ *                     fullName:
  *                       type: string
- *                     category:
+ *                     categories:
  *                       type: array
  *                       items:
  *                         type: string
@@ -56,35 +62,108 @@ const router = express.Router();
  */
 
 router.post('/register', async (req: Request, res: Response) => {
-  const { name, username, followings } = req.body;
+  const { instagramUserID, fullName, username, followings } = req.body;
 
-  console.log("req.bodyis", req.body)
+  console.log("req.body is", req.body);
   try {
-
-    if (!name || !username || !followings) {
-      return res.status(400).json({ statusCode: 400, message: 'Name, username, and followings are required' });
+    if (!instagramUserID || !username || !Array.isArray(followings)) {
+      return res.status(400).json({ statusCode: 400, message: 'Instagram User ID, username, and followings are required' });
     }
 
-    const existingUser = await User.findOne({ username });
+    const existingUser = await User.findOne({ instagramUserID });
     if (existingUser) {
-      return res.status(409).json({ statusCode: 409, message: 'Username already taken' });
+      return res.status(409).json({ statusCode: 409, message: 'Instagram user id is already taken' });
     }
 
     const user = new User({
-      name,
+      instagramUserID,
+      fullName,
       username,
-      followings, // Add the followings array with category and description
+      followings, // Add the followings array with instagramUserID, username, fullName, categories, and description
+      categories: [], // Initialize categories as an empty array
+      
     });
 
     await user.save();
 
     res.status(201).json({ statusCode: 201, message: 'User registered successfully', data: user });
   } catch (error) {
-    console.log(error)
+    console.log(error);
     res.status(500).json({ statusCode: 500, message: 'Internal Server Error' });
-
   }
 });
+// DELETE /users/:id - Delete a user by ID
+/**
+ * @swagger
+ * /users/{instagramUserID}:
+ *   delete:
+ *     summary: Delete a user by instagramUserID
+ *     tags: [Users]
+ *     parameters:
+ *       - in: path
+ *         name: instagramUserID
+ *         schema:
+ *           type: string
+ *         required: true
+ *         description: The user's Instagram User ID
+ *     responses:
+ *       200:
+ *         description: User deleted successfully
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 200
+ *                 message:
+ *                   type: string
+ *                   example: User deleted successfully
+ *       404:
+ *         description: User not found
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 404
+ *                 message:
+ *                   type: string
+ *                   example: User not found
+ *       500:
+ *         description: Internal server error
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 statusCode:
+ *                   type: integer
+ *                   example: 500
+ *                 message:
+ *                   type: string
+ *                   example: Internal server error
+ *                 error:
+ *                   type: object
+ */
+router.delete('/:instagramUserID', async (req: Request, res: Response) => {
+  try {
+    const instagramUserID = req.params.instagramUserID;
+    const user = await User.findOneAndDelete({ instagramUserID });
+
+    if (!user) {
+      return res.status(404).json({ statusCode: 404, message: 'User not found' });
+    }
+
+    res.status(200).json({ statusCode: 200, message: 'User deleted successfully' });
+  } catch (error) {
+    res.status(500).json({ statusCode: 500, message: 'Internal server error', error });
+  }
+});
+
 
 // Update user endpoint
 
@@ -109,27 +188,30 @@ router.post('/register', async (req: Request, res: Response) => {
  *           schema:
  *             type: object
  *             properties:
- *               name:
+*               fullName:
  *                 type: string
- *                 description: The name of the user
+ *               instagramUserID:
+ *                 type: string
  *               username:
  *                 type: string
- *                 description: The username of the user
  *               followings:
  *                 type: array
  *                 items:
  *                   type: object
  *                   properties:
+ *                     instagramUserID:
+ *                       type: string
  *                     username:
  *                       type: string
- *                     full_name:
+ *                     fullName:
  *                       type: string
- *                     category:
+ *                     categories:
  *                       type: array
  *                       items:
  *                         type: string
  *                     description:
  *                       type: string
+
  *     responses:
  *       200:
  *         description: User updated successfully
@@ -173,24 +255,43 @@ router.patch('/:username', async (req: Request, res: Response) => {
 
   try {
     // Find the user by username
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username })
+    
+    
+    ;
 
     if (!user) {
       return res.status(404).json({ statusCode: 404, message: 'User not found' });
     }
 
-    // Apply partial updates
-    if (updates.followings) {
-      // Update the followings array
-      const updatedFollowings = user.followings.map(following => {
-        const updated = updates.followings.find((u: { username: string; }) => u.username === following.username);
-        return updated ? { ...following, ...updated } : following;
-      });
-
-      // Add any new followings that aren't in the current list
-      const newFollowings = updates.followings.filter((u: { username: string; }) => !user.followings.find(f => f.username === u.username));
-      user.followings = [...updatedFollowings, ...newFollowings];
+     // Apply partial updates
+     if (updates.fullName) {
+      user.fullName = updates.fullName;
     }
+
+    if (updates.instagramUserID) {
+      user.instagramUserID = updates.instagramUserID;
+    }
+
+    if (updates.username) {
+      user.username = updates.username;
+    }
+
+
+    // Apply partial updates
+    // Maybe use other ENDPOINT  /users/followings/:username FOR SMOOTHER AND CLEANER CODE
+    // It is here but dont think will work
+    // if (updates.followings) {
+    //   // Update the followings array
+    //   const updatedFollowings = user.followings.map(following => {
+    //     const updated = updates.followings.find((u: { username: string; }) => u.username === following.username);
+    //     return updated ? { ...following, ...updated } : following;
+    //   });
+
+    //   // Add any new followings that aren't in the current list
+    //   const newFollowings = updates.followings.filter((u: { username: string; }) => !user.followings.find(f => f.username === u.username));
+    //   user.followings = [...updatedFollowings, ...newFollowings];
+    // }
 
     // Apply other updates
     Object.keys(updates).forEach(key => {
@@ -243,7 +344,10 @@ router.patch('/:username', async (req: Request, res: Response) => {
 router.get('/:username', async (req: Request, res: Response) => {
   try {
       const username = req.params.username;
-      const user = await User.findOne({ username });
+      const user = await User.findOne({ username })
+      .populate('categories', 'name') // Populate user categories
+      .populate('followings.categories', 'name'); // Populate followings categories
+      ;
 
       if (!user) {
           return res.status(404).json({ message: 'User not found' });
@@ -310,7 +414,7 @@ router.get('/', async (req: Request, res: Response, ) => {
  *           schema:
  *             type: object
  *             properties:
- *               category:
+ *               categoryName:
  *                 type: string
  *                 description: The category to add
  *     responses:
@@ -326,7 +430,12 @@ router.get('/', async (req: Request, res: Response, ) => {
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '../model/User'
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
  *       404:
  *         description: User not found
  *       400:
@@ -336,28 +445,48 @@ router.get('/', async (req: Request, res: Response, ) => {
  */
 router.patch('/categories/:username/', async (req: Request, res: Response) => {
   const username = req.params.username;
-  const { category } = req.body;
+  const { categoryName } = req.body;
 
+  if (!categoryName) {
+    return res.status(400).json({ statusCode: 400, message: 'Category name is required' });
+  }
   try {
-    if (!category) {
-      return res.status(400).json({ statusCode: 400, message: 'Category is required' });
-    }
-
+  
     const user = await User.findOne({ username });
 
     if (!user) {
       return res.status(404).json({ statusCode: 404, message: 'User not found' });
     }
 
-    // Check if the category already exists
-    if (!user.categories.includes(category)) {
-      user.categories.push(category);
-      await user.save();
-      return res.status(200).json({ statusCode: 200, message: 'Category added successfully', data: user });
-    } else {
-      return res.status(400).json({ statusCode: 400, message: 'Category already exists' });
+    let category: ICategory | null = await Category.findOne({ name: categoryName });
+
+    // If category doesn't exist, create it
+    if (!category) {
+      category = new Category({ name: categoryName });
+      await category.save();
     }
 
+    // Check if the category is already associated with the user
+    
+// Check if the category is already associated with the user
+if (user.categories.some((cat) => cat.name === category.name)) {
+  return res.status(400).json({ statusCode: 400, message: 'Category already exists' });
+}
+
+// Add the category object to the user's categories
+user.categories.push(category);
+await user.save();
+
+    await user.save();
+
+    return res.status(200).json({
+      statusCode: 200,
+      message: 'Category added successfully',
+      data: {
+        id: category._id,
+        name: category.name,
+      },
+    });
   } catch (error) {
     console.error('Error adding category:', error);
     res.status(500).json({ statusCode: 500, message: 'Server error' });
@@ -367,7 +496,7 @@ router.patch('/categories/:username/', async (req: Request, res: Response) => {
 // New endpoint to add categories to FollowingSchema
 /**
  * @swagger
- * /users/followings/{username}/{followingUsername}:
+ * /users/followings/{username}/{followingUsername}/{categoryName}:
  *   patch:
  *     summary: Add a category to a following if it exists in user's categories
  *     tags: [Users]
@@ -384,6 +513,12 @@ router.patch('/categories/:username/', async (req: Request, res: Response) => {
  *         schema:
  *           type: string
  *         description: The username of the following
+ *       - in: path
+ *         name: categoryName
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: The name of the category
  *     requestBody:
  *       required: true
  *       content:
@@ -391,7 +526,7 @@ router.patch('/categories/:username/', async (req: Request, res: Response) => {
  *           schema:
  *             type: object
  *             properties:
- *               category:
+ *               categories:
  *                 type: string
  *                 description: The category to add
  *     responses:
@@ -415,14 +550,11 @@ router.patch('/categories/:username/', async (req: Request, res: Response) => {
  *       500:
  *         description: Internal Server Error
  */
-router.patch('/followings/:username/:followingUsername', async (req: Request, res: Response) => {
-  const { username, followingUsername } = req.params;
-  const { category } = req.body;
+router.patch('/followings/:username/:followingUsername/:categoryName', async (req: Request, res: Response) => {
+  const { username, followingUsername,categoryName } = req.params;
 
   try {
-    if (!category) {
-      return res.status(400).json({ statusCode: 400, message: 'Category is required' });
-    }
+   
 
     const user = await User.findOne({ username });
 
@@ -430,20 +562,27 @@ router.patch('/followings/:username/:followingUsername', async (req: Request, re
       return res.status(404).json({ statusCode: 404, message: 'User not found' });
     }
 
-    if (!user.categories.includes(category)) {
-      return res.status(400).json({ statusCode: 400, message: 'Category must exist in user categories' });
-    }
+    
     const following = user.followings.find(f => f.username === followingUsername);
 
     if (!following) {
       return res.status(404).json({ statusCode: 404, message: 'Following not found' });
     }
 
-    if (following.category.includes(category)) {
+
+    let category: ICategory | null  = await Category.findOne({ name: categoryName });
+    if (!category) {
+      return res.status(404).json({ statusCode: 404, message: 'Category not found' });
+    }
+
+    // Check if the category ID is already associated with the following
+    if (following.categories.some((cat) => cat.equals(category!._id as mongoose.Types.ObjectId))) {
       return res.status(400).json({ statusCode: 400, message: 'Category already exists in following' });
     }
 
-    following.category.push(category);
+
+    // Add the category ID to the following's categories
+    following.categories.push(category._id as mongoose.Types.ObjectId);
     await user.save();
 
     res.status(200).json({ statusCode: 200, message: 'Category added to following successfully', data: user });
@@ -562,7 +701,12 @@ router.delete('/categories/:username', async (req: Request, res: Response) => {
  *                 message:
  *                   type: string
  *                 data:
- *                   $ref: '../model/User'
+ *                   type: object
+ *                   properties:
+ *                     id:
+ *                       type: string
+ *                     name:
+ *                       type: string
  *       404:
  *         description: User or category not found
  *       500:
@@ -573,30 +717,23 @@ router.patch('/categories/:username/rename', async (req: Request, res: Response)
   const { oldCategory, newCategory } = req.body;
 
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username })
+    .populate('categories', 'name') ;
 
     if (!user) {
       return res.status(404).json({ statusCode: 404, message: 'User not found' });
     }
 
-    const categoryIndex = user.categories.indexOf(oldCategory);
-    if (categoryIndex === -1) {
-      return res.status(404).json({ statusCode: 404, message: 'Category not found' });
+    const category = user.categories.find(cat => cat.name === oldCategory);
+    if (!category) {
+      return res.status(404).json({ statusCode: 404, message: `Category not found` });
     }
+    console.log(category)
+    category.name = newCategory;
 
-    user.categories[categoryIndex] = newCategory;
+    await Category.findByIdAndUpdate(category._id, { name: newCategory });
 
-    // Update the category in followings
-    user.followings.forEach(following => {
-      const followingCategoryIndex = following.category.indexOf(oldCategory);
-      if (followingCategoryIndex !== -1) {
-        following.category[followingCategoryIndex] = newCategory;
-      }
-    });
-
-    await user.save();
-
-    res.status(200).json({ statusCode: 200, message: 'Category renamed successfully', data: user });
+    res.status(200).json({ statusCode: 200, message: 'Category renamed successfully', data: { id: category._id, name: newCategory } });
   } catch (error) {
     console.error('Error renaming category:', error);
     res.status(500).json({ statusCode: 500, message: 'Server error' });

@@ -1,8 +1,8 @@
 'use client'
 import Link from 'next/link';
-import {followings} from '../../backend/model/followings'
+
 import { useState, useEffect } from 'react';
-import useUserData from './hooks/useUserData';
+import {useUserData} from './hooks/useUserData';
 
 
 const Home: React.FC = () => {
@@ -76,7 +76,11 @@ const Home: React.FC = () => {
   </a>
                 </h3>
               <p>{following.full_name || '(No full name)'}</p>
-              <p>Categories: {following.category.join(', ') || '(No categories)'}</p>
+              <p>
+              Categories: {following.categories.length > 0 
+                ? following.categories.map(category => category.name).join(', ') 
+                : '(No categories)'}
+          </p>
               <p>Description: {following.description || '(No description)'}</p>
             </div>
             <div className="ml-4 flex flex-col items-start">

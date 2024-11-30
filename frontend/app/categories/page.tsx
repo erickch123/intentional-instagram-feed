@@ -1,18 +1,18 @@
 'use client'
 import Link from 'next/link';
 import { useState } from 'react';
-import useUserData from '../hooks/useUserData';
+import {useUserData,Category} from '../hooks/useUserData';
 
 const Categories: React.FC = () => {
   const { user, loading, error, setUser } = useUserData('erickkkk_photos');
-  const [newCategory, setNewCategory] = useState<string>('');
+  const [newCategoryName, setNewCategory] =  useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [renameCategory, setRenameCategory] = useState<string>('');
   const [categoryToRename, setCategoryToRename] = useState<string | null>(null);
 
 
   const handleAddCategory = async () => {
-    if (newCategory.trim() === '') return;
+    if (newCategoryName.trim() === '') return;
   
     try {
       const response = await fetch(`http://localhost:5000/users/categories/${user?.username}/`, {
@@ -20,17 +20,22 @@ const Categories: React.FC = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ category: newCategory }),
+        body: JSON.stringify({ categoryName: newCategoryName }),
       });
   
+      
       if (!response.ok) {
-        throw new Error('Failed to add category');
+        console.log(response);
+        throw new Error(`Failed to add category due to errr response: ${response}`);
       }
-  
+      const result = await response.json();
+      const addedCategory = result.data;
+
+
       // Ensure all required fields are present and correctly typed
       const updatedUser = {
         ...user,
-        categories: [...(user?.categories || []), newCategory],
+        categories: [...(user?.categories || []), addedCategory],
         _id: user?._id || '', // Ensure _id is not undefined
         name: user?.name || '',
         username: user?.username || '',
@@ -64,52 +69,74 @@ const Categories: React.FC = () => {
         throw new Error('Failed to rename category');
       }
 
-      const updatedUser = await response.json();
+      const result = await response.json();
+      const updatedCategory = result.data;
+
+
+      // Ensure all required fields are present and correctly typed
+      const updatedUser = {
+        ...user,
+        categories: user!.categories.map(category =>
+          category.id === updatedCategory.id ? updatedCategory : category
+        ),
+        _id: user!._id || '', // Ensure _id is not undefined
+        name: user!.name || '',
+        username: user!.username || '',
+        followings: user!.followings || [],
+      };
+  
       setUser(updatedUser);
-      setCategoryToRename(null);
+      setCategoryToRename('');
       setRenameCategory('');
     } catch (err) {
       console.error(err);
     }
   };
   const renderCategories = () => {
-    if (!user || !user.categories.length) return null;
+   
+    if (!user || !user.categories || !user.categories.length) return null;
 
     return (
       <div className="mt-8">
         <h2 className="text-3xl font-bold">Categories</h2>
+        <h4 className="text-3xl ">Click any category to see the followings list</h4>
         <ul className="mt-4 space-y-2">
-          {user.categories.map((category, index) => (
-            <li key={index} className="border p-2 rounded flex justify-between items-center">
-              <p>{category}</p>
-              <div className="flex items-center">
-                <button
-                  onClick={() => setCategoryToRename(category)}
-                  className="ml-2 bg-yellow-500 text-white p-1 rounded"
-                >
-                  Rename
-                </button>
-                {categoryToRename === category && (
-                  <div className="ml-2 flex items-center">
-                    <input
-                      type="text"
-                      value={renameCategory}
-                      onChange={(e) => setRenameCategory(e.target.value)}
-                      placeholder="Rename category"
-                      className="border p-2 rounded text-black"
-                    />
-                    <button
-                      onClick={handleRenameCategory}
-                      className="ml-2 bg-green-500 text-white p-2 rounded"
-                    >
-                      Rename
-                    </button>
-                  </div>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+        {user.categories.map((category) => (
+          <li key={category.id} className="border p-2 rounded flex justify-between items-center">
+            <p
+              onClick={() => handleCategoryClick(category.name)}
+              className="cursor-pointer"
+            >
+              {category.name}
+            </p>
+            <div className="flex items-center">
+              <button
+                onClick={() => setCategoryToRename(category.name)}
+                className="ml-2 bg-yellow-500 text-white p-1 rounded"
+              >
+                Rename
+              </button>
+              {categoryToRename === category.name && (
+                <div className="ml-2 flex items-center">
+                  <input
+                    type="text"
+                    value={renameCategory}
+                    onChange={(e) => setRenameCategory(e.target.value)}
+                    placeholder="Rename category"
+                    className="border p-2 rounded text-black"
+                  />
+                  <button
+                    onClick={handleRenameCategory}
+                    className="ml-2 bg-green-500 text-white p-2 rounded"
+                  >
+                    Rename
+                  </button>
+                </div>
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
       </div>
     );
   };
@@ -117,8 +144,9 @@ const Categories: React.FC = () => {
   const renderFollowingsByCategory = () => {
     if (!user || !selectedCategory) return null;
 
-    const followingsByCategory = user.followings.filter(following => following.category.includes(selectedCategory));
-
+    const followingsByCategory = user.followings.filter(following =>
+      following.categories.some(category => category.name === selectedCategory)
+    );
     if (!followingsByCategory.length) return <p>No followings in this category.</p>;
 
     return (
@@ -164,8 +192,8 @@ const Categories: React.FC = () => {
         <div className="mt-4">
           <input
             type="text"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
+            value={newCategoryName}
+            onChange={(e) => setNewCategory(e.target.value )}
             placeholder="Add new category"
             className="border p-2 rounded text-black"
           />
