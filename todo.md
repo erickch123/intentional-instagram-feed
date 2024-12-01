@@ -12,7 +12,20 @@
 
 
 
+
+
+
 FOUND 19 OCTOBER
 -SHIT if i rename category, means to rename all the categories inside a following.
 - Other implementation is using the ID, which is also mafan ahahha
 - I also need to check if i have to use rapid api shit or not
+
+
+FIXED 1 DECEMBER
+1. BACKEND CONFIRM FIXED
+2. FRONTNED WORKS BUT NEED TO RELOAD
+
+NEXT STEP BETTER PRACTICE
+1. WRITE TEST CASE FOR BACKENDD FIRST, I lazy do frontend
+2. WRITE ETL ENDPOINT FOLLOWINGS
+3. FIX FRONTEND RELOADING

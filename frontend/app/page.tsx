@@ -27,7 +27,7 @@ const Home: React.FC = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/users/followings/${user?.username}/${followingUsername}`, {
+      const response = await fetch(`http://localhost:5000/users/followings/${user?.username}/${followingUsername}/${newCategory[followingUsername]}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import User from '../model/User';
-import mongoose  from 'mongoose';
+import mongoose from 'mongoose';
 import Category, { ICategory } from '../model/Category';
 
 const router = express.Router();
@@ -519,16 +519,6 @@ await user.save();
  *         schema:
  *           type: string
  *         description: The name of the category
- *     requestBody:
- *       required: true
- *       content:
- *         application/json:
- *           schema:
- *             type: object
- *             properties:
- *               categories:
- *                 type: string
- *                 description: The category to add
  *     responses:
  *       200:
  *         description: Category added to following successfully
@@ -551,46 +541,50 @@ await user.save();
  *         description: Internal Server Error
  */
 router.patch('/followings/:username/:followingUsername/:categoryName', async (req: Request, res: Response) => {
-  const { username, followingUsername,categoryName } = req.params;
+  const { username, followingUsername, categoryName } = req.params;
 
   try {
-   
-
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username })
+    .populate('categories', 'name') // Populate user categories
+    .populate('followings.categories', 'name'); // Populate followings categories
 
     if (!user) {
       return res.status(404).json({ statusCode: 404, message: 'User not found' });
     }
 
-    
     const following = user.followings.find(f => f.username === followingUsername);
 
     if (!following) {
       return res.status(404).json({ statusCode: 404, message: 'Following not found' });
     }
 
-
-    let category: ICategory | null  = await Category.findOne({ name: categoryName });
+    const category = user.categories.find(cat => cat.name === categoryName);
     if (!category) {
-      return res.status(404).json({ statusCode: 404, message: 'Category not found' });
+      return res.status(404).json({ statusCode: 404, message: `Category not found ${user.categories}`});
     }
 
     // Check if the category ID is already associated with the following
-    if (following.categories.some((cat) => cat.equals(category!._id as mongoose.Types.ObjectId))) {
-      return res.status(400).json({ statusCode: 400, message: 'Category already exists in following' });
-    }
+    // if (following.categories.some((cat: any) => cat._id.equals(category._id) || cat.name === category.name)) {
+    //   return res.status(400).json({ statusCode: 400, message: 'Category already exists in following' });
+    // }
 
+     // Check if the category ID or name is already associated with the following
+     if (following.categories.some((cat: any) => cat._id.equals(category._id) || cat.name === category.name)) {
+      return res.status(400).json({ statusCode: 400, message: `Category already exists in following ${category}` });
+    }
 
     // Add the category ID to the following's categories
     following.categories.push(category._id as mongoose.Types.ObjectId);
+
     await user.save();
 
-    res.status(200).json({ statusCode: 200, message: 'Category added to following successfully', data: user });
+    res.status(200).json({ statusCode: 200, message: `Category added to following successfully ${category}`, data: user });
   } catch (err) {
     console.error('Error adding category to following:', err);
     res.status(500).json({ statusCode: 500, message: 'Server error' });
   }
 });
+
 
 // Delete a category from a user's categories
 /**
@@ -718,7 +712,7 @@ router.patch('/categories/:username/rename', async (req: Request, res: Response)
 
   try {
     const user = await User.findOne({ username })
-    .populate('categories', 'name') ;
+    .populate('categories', 'name') ;  
 
     if (!user) {
       return res.status(404).json({ statusCode: 404, message: 'User not found' });
