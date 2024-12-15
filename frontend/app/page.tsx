@@ -11,8 +11,8 @@ const Home: React.FC = () => {
   const [newCategory, setNewCategory] = useState<{ [key: string]: string }>({});
   const [itemsPerPage, setItemsPerPage] = useState(10);
   const [errorMessages, setErrorMessages] = useState<{ [key: string]: string }>({});
-  // const [searchTerm, setSearchTerm] = useState<string>('');
-  // const [filteredFollowings, setFilteredFollowings] = useState<any[]>([]);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filteredFollowings, setFilteredFollowings] = useState<any[]>([]);
 
 
 
@@ -24,7 +24,6 @@ const Home: React.FC = () => {
     }
 
     try {
-      console.log("before",user)
 
       const response = await fetch(`http://localhost:5000/users/followings/${user?.username}/${followingUsername}/${newCategory[followingUsername]}`, {
         method: 'PATCH',
@@ -75,22 +74,24 @@ const Home: React.FC = () => {
     }
   };
 
-  // const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-  //   const term = e.target.value;
-  //   setSearchTerm(term);
-  //   if (term.trim() === '') {
-  //     setFilteredFollowings([]);
-  //   } else {
-  //     const filtered = user?.followings.filter(following =>
-  //       following.username.toLowerCase().includes(term.toLowerCase())
-  //     );
-  //     setFilteredFollowings(filtered || []);
-  //   }
-  // };
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+    if (term.trim() === '') {
+      setFilteredFollowings([]);
+    } else {
+      const filtered = user?.followings.filter(following =>
+        following.username.toLowerCase().includes(term.toLowerCase())
+      );
+      setFilteredFollowings(filtered || []);
+    }
+  };
   const renderFollowings = () => {
     if (!user) return null;
 
-    const followings = user.followings || [];
+
+    const followings = searchTerm ? filteredFollowings : user.followings || [];
+    // const followings = user.followings || [];
     const indexOfLastItem = currentPage * itemsPerPage;
     const indexOfFirstItem = indexOfLastItem - itemsPerPage;
     const currentFollowings = followings.slice(indexOfFirstItem, indexOfLastItem);
@@ -101,6 +102,13 @@ const Home: React.FC = () => {
       <>
         <div className="mt-8">
           <h2 className="text-3xl font-bold">Followings</h2>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearch}
+            placeholder="Search by username"
+            className="border p-2 rounded w-full mt-2 text-black"
+          />
           <ul className="mt-4 space-y-2">
             {currentFollowings.map((following, index) => (
             <li key={index} className="border p-2 rounded flex justify-between items-start">
