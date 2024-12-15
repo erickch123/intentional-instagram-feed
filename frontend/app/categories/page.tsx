@@ -9,7 +9,11 @@ const Categories: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [renameCategory, setRenameCategory] = useState<string>('');
   const [categoryToRename, setCategoryToRename] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const [filteredFollowings, setFilteredFollowings] = useState<any[]>([]);
 
+
+  
 
   const handleAddCategory = async () => {
     if (newCategoryName.trim() === '') return;
@@ -77,7 +81,7 @@ const Categories: React.FC = () => {
       const updatedUser = {
         ...user,
         categories: user!.categories.map(category =>
-          category.id === updatedCategory.id ? updatedCategory : category
+          category.name === categoryToRename ? updatedCategory : category
         ),
         _id: user!._id || '', // Ensure _id is not undefined
         name: user!.name || '',
@@ -92,6 +96,62 @@ const Categories: React.FC = () => {
       console.error(err);
     }
   };
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const term = e.target.value;
+    setSearchTerm(term);
+    if (term.trim() === '') {
+      setFilteredFollowings([]);
+    } else {
+      const filtered = user?.followings.filter(following =>
+        following.username.toLowerCase().includes(term.toLowerCase())
+      );
+      setFilteredFollowings(filtered || []);
+    }
+  };
+
+  const handleAddToCategory = async (followingUsername: string) => {
+    if (!selectedCategory) return;
+
+    try {
+      const response = await fetch(`http://localhost:5000/users/followings/${user?.username}/${followingUsername}/${selectedCategory}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ category: selectedCategory }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to add following to category');
+      }
+
+      const res = await response.json();
+      const updatedCategoryModel = res.data;
+
+      // Update the user's followings with the new category
+      const updatedUser = {
+        ...user,
+        followings: user!.followings.map(following =>
+          following.username === followingUsername
+            ? { ...following, categories: [...following.categories, updatedCategoryModel] }
+            : following
+        ),
+        _id: user!._id || '', // Ensure _id is not undefined
+        name: user!.name || '',
+        username: user!.username || '',
+        categories: user!.categories || [],
+      };
+
+      setUser(updatedUser);
+      setSearchTerm('');
+      setFilteredFollowings([]);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+
   const renderCategories = () => {
    
     if (!user || !user.categories || !user.categories.length) return null;
@@ -166,6 +226,33 @@ const Categories: React.FC = () => {
             </li>
           ))}
         </ul>
+        <div className="mt-8">
+          <h3 className="text-2xl font-bold">Add an Instagram username to this category</h3>
+          <input
+            type="text"
+            value={searchTerm}
+            onChange={handleSearch}
+            placeholder="Search by username"
+            className="border p-2 rounded w-full mt-2"
+          />
+          {filteredFollowings.length > 0 && (
+            <ul className="mt-4 space-y-2">
+              {filteredFollowings.map((following, index) => (
+                <li key={index} className="border p-2 rounded flex justify-between items-center">
+                  <span>{following.username}</span>
+                  <button
+                    onClick={() => handleAddToCategory(following.username)}
+                    className="px-4 py-2 bg-blue-500 text-black rounded"
+                  >
+                    Add to {selectedCategory}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+
       </div>
     );
   };

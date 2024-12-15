@@ -578,7 +578,7 @@ router.patch('/followings/:username/:followingUsername/:categoryName', async (re
 
     await user.save();
 
-    res.status(200).json({ statusCode: 200, message: `Category added to following successfully ${category}`, data: user });
+    res.status(200).json({ statusCode: 200, message: `Category added to following successfully`, data: category });
   } catch (err) {
     console.error('Error adding category to following:', err);
     res.status(500).json({ statusCode: 500, message: 'Server error' });
