@@ -50,8 +50,8 @@ describe('User API - Integration Tests', () => {
       ],
     };
 
-    const response = await axios.post(`${baseURL}/register`, newUser);
-
+    const response = await axios.post(`${baseURL}/users/register`, newUser);
+    console.log(response)
     expect(response.status).toBe(201);
     const { statusCode, message, data } = response.data;
 
@@ -72,7 +72,13 @@ describe('User API - Integration Tests', () => {
     expect(following.description).toBe('Test description for following');
 
     // Clean up by deleting the test user
-    await axios.delete(`${baseURL}/${newUser.instagramUserID}`);
+    const deleteResponse = await axios.delete(`${baseURL}/users/${newUser.instagramUserID}`);
+
+    expect(deleteResponse.data).toEqual({
+      statusCode: 200,
+      message: 'User deleted successfully',
+    });
+
   });
 
   // Test for DELETE /:instagramUserID

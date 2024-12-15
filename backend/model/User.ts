@@ -1,20 +1,14 @@
 import mongoose, { Document, Schema, Types } from 'mongoose';
 import { ICategory } from './Category';
+// import {Following,IFollowing} from './Following';
 
-interface IFollowing {
+
+export interface IFollowing {
   instagramUserID: string;
   username: string;
   fullName?: string; // Optional field
   categories: Types.ObjectId[]; // References to Category
   description: string;
-}
-
-interface IUser extends Document {
-  instagramUserID: string; // Required field
-  fullName?: string; // Optional field
-  username: string;
-  followings: IFollowing[];
-  categories: ICategory[];
 }
 
 
@@ -43,6 +37,16 @@ const FollowingSchema: Schema = new Schema({
     default: '',
   },
 });
+
+interface IUser extends Document {
+  instagramUserID: string; // Required field
+  fullName?: string; // Optional field
+  username: string;
+  followings: IFollowing[];
+  categories: ICategory[];
+}
+
+
 const UserSchema: Schema = new Schema({
   instagramUserID: {
     type: String,

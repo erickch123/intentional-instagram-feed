@@ -1,6 +1,7 @@
 import express from 'express';
 import  auth  from './router/auth';
 import user from './router/user';
+import followings from './router/following';
 import connectDB from './db';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -30,6 +31,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerDocs));
 
 app.use('/auth', auth);
 app.use('/users',user);
+app.use('/followings',followings);
+
 
 app.listen(PORT, () => {
     console.log(`Server is running on http://localhost:${PORT}`);
