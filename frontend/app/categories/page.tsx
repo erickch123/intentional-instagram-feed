@@ -11,6 +11,8 @@ const Categories: React.FC = () => {
   const [categoryToRename, setCategoryToRename] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filteredFollowings, setFilteredFollowings] = useState<any[]>([]);
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string >("");
 
 
   
@@ -92,6 +94,36 @@ const Categories: React.FC = () => {
       setUser(updatedUser);
       setCategoryToRename('');
       setRenameCategory('');
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryName: string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/users/categories/${user?.username}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ category: categoryName }),
+      });
+
+      if (!response.ok) {
+        console.log(response);
+        throw new Error(`Failed to delete category due to error response: ${response}`);
+      }
+
+      const updatedUser = {
+        ...user,
+        categories: user?.categories.filter(category => category.name !== categoryName),
+        _id: user!._id || '', // Ensure _id is not undefined
+        name: user!.name || '',
+        username: user!.username || '',
+        followings: user!.followings || [],
+      };
+
+      setUser(updatedUser);
     } catch (err) {
       console.error(err);
     }
@@ -193,6 +225,39 @@ const Categories: React.FC = () => {
                   </button>
                 </div>
               )}
+              <button
+                onClick={() => {
+                setShowDeleteConfirmation(true);
+                setCategoryToDelete(category.name);
+        }}
+        className="ml-2 bg-red-500 text-white p-1 rounded"
+      >
+        Delete
+      </button>
+      {showDeleteConfirmation && (
+        <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50">
+          <div className="bg-white text-black p-4 rounded">
+            <p>Are you sure you want to delete the category? Any data inside the category will be deleted.</p>
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={() => setShowDeleteConfirmation(false)}
+                className="mr-2 bg-gray-500 text-white p-2 rounded"
+              >
+                No
+              </button>
+              <button
+                onClick={() => {
+                  handleDeleteCategory(categoryToDelete);
+                  setShowDeleteConfirmation(false);
+                }}
+                className="bg-red-500 text-white p-2 rounded"
+              >
+                Yes
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
             </div>
           </li>
         ))}

@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import User from '../model/User';
-import mongoose from 'mongoose';
+import mongoose, { Types } from 'mongoose';
 import Category, { ICategory } from '../model/Category';
 
 const router = express.Router();
@@ -634,26 +634,89 @@ router.delete('/categories/:username', async (req: Request, res: Response) => {
   const { category } = req.body;
 
   try {
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username })
+    .populate('categories', 'name') // Populate user categories
+    
+    ;
 
     if (!user) {
       return res.status(404).json({ statusCode: 404, message: 'User not found' });
     }
 
-    const categoryIndex = user.categories.indexOf(category);
+    console.log("user categories,", user.categories)
+    const categoryIndex = user.categories.findIndex(cat => cat.name === category);
     if (categoryIndex === -1) {
       return res.status(404).json({ statusCode: 404, message: 'Category not found' });
     }
 
+
+
+    
+   
+    console.log()
+
+    const categoryId = user.categories[categoryIndex]._id as Types.ObjectId;
+    console.log("categoryId", categoryId)
     user.categories.splice(categoryIndex, 1);
+    
+
+    user.followings.forEach(following => {
+      const followingCategoryIndex = following.categories.findIndex(cat => cat.equals(categoryId));
+     
+      if (followingCategoryIndex !== -1) {
+        console.log("following.categories", following.categories)
+        following.categories.splice(followingCategoryIndex, 1);
+      }
+    });
+
     await user.save();
 
-    res.status(200).json({ statusCode: 200, message: 'Category deleted successfully', data: user });
+    res.status(200).json({ statusCode: 200, message: 'Category deleted successfully'});
   } catch (error) {
     console.error('Error deleting category:', error);
     res.status(500).json({ statusCode: 500, message: 'Server error' });
   }
 });
+
+
+// router.delete('/categories/:username/followings/:followingUsername', async (req: Request, res: Response) => {
+//   const { username, followingUsername } = req.params;
+//   const { category } = req.body;
+
+//   try {
+//     const user = await User.findOne({ username })
+//       .populate('categories', 'name') // Populate user categories
+//       .populate('followings.categories', 'name'); // Populate followings categories
+
+//     if (!user) {
+//       return res.status(404).json({ statusCode: 404, message: 'User not found' });
+//     }
+
+//     const following = user.followings.find(following => following.username === followingUsername);
+//     if (!following) {
+//       return res.status(404).json({ statusCode: 404, message: 'Following not found' });
+//     }
+
+//     const categoryIndex = following.categories.findIndex(cat => cat.name === category);
+//     if (categoryIndex === -1) {
+//       return res.status(404).json({ statusCode: 404, message: 'Category not found in following' });
+//     }
+
+//     const categoryId = following.categories[categoryIndex]._id as Types.ObjectId;
+//     following.categories.splice(categoryIndex, 1);
+
+//     await user.save();
+
+//     res.status(200).json({ statusCode: 200, message: 'Category deleted from following successfully' });
+//   } catch (error) {
+//     console.error('Error deleting category from following:', error);
+//     res.status(500).json({ statusCode: 500, message: 'Server error' });
+//   }
+
+
+// });
+
+
 
 // Rename a category
 /**

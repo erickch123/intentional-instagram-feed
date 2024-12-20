@@ -21,9 +21,6 @@ FOUND 19 OCTOBER
 - I also need to check if i have to use rapid api shit or not
 
 
-FIXED 1 DECEMBER
-1. BACKEND CONFIRM FIXED
-2. FRONTNED WORKS BUT NEED TO RELOAD
 
 NEXT STEP BETTER PRACTICE
 1. WRITE TEST CASE FOR BACKENDD FIRST, I lazy do frontend
@@ -32,4 +29,13 @@ NEXT STEP BETTER PRACTICE
 
 
 
-ENABLE SEARCH INSIDE CATEGORY
+ENABLE SEARCH INSIDE CATEGORY < DONE>
+SEARCH IN THE HOMEPAGE IS HALFDONE
+^ bcs still have the unresponsive update
+
+
+bug
+LOL serach only works in the first page
+
+
+Now only the remove category of a user.following inside the following

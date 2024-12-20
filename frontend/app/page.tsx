@@ -63,6 +63,15 @@ const Home: React.FC = () => {
   
       setUser(updatedUser);
 
+      if (searchTerm) {
+        const updatedFilteredFollowings = filteredFollowings.map(following =>
+          following.username === followingUsername
+            ? { ...following, categories: [...following.categories, updatedCategoryModel] }
+            : following
+        );
+        setFilteredFollowings(updatedFilteredFollowings);
+      }
+
       setNewCategory({ ...newCategory, [followingUsername]: '' });
       setErrorMessages({ ...errorMessages, [followingUsername]: '' }); // Clear error message on success
     } catch (err) {
@@ -77,6 +86,7 @@ const Home: React.FC = () => {
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;
     setSearchTerm(term);
+    setCurrentPage(1);
     if (term.trim() === '') {
       setFilteredFollowings([]);
     } else {
@@ -118,7 +128,7 @@ const Home: React.FC = () => {
     {following.username}
   </a>
                 </h3>
-              <p>{following.full_name || '(No full name)'}</p>
+              <p>{following.fullName || '(No full name)'}</p>
               <p>
               Categories: {following.categories.length > 0 
                 ? following.categories.map(category => category.name).join(', ') 
@@ -152,12 +162,11 @@ const Home: React.FC = () => {
               >
                 Add
               </button>
-
               {errorMessages[following.username] && (
                     <div className="mt-4 p-2 bg-red-500 text-white rounded">
                       {errorMessages[following.username]}
                     </div>
-                  )}
+                  )}              
             </div>
           </li>
             ))}
