@@ -82,7 +82,48 @@ const Home: React.FC = () => {
       }
     }
   };
+  const deleteCategoryOfAFollowing = async (followingUsername:string, category:string) => {
+    try {
+      const response = await fetch(`http://localhost:5000/users/categories/${user?.username}/followings/${followingUsername}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ category }),
+      });
 
+      if (!response.ok) {
+        throw new Error('Failed to delete category');
+      }
+
+      // Update the UI or state after successful deletion
+      console.log(`Deleted category ${category} from following ${followingUsername}`);
+      // Optionally, you can refresh the followings list or update the state here
+      const updatedUser = {
+        ...user,
+        followings: user!.followings.map(following =>
+          following.username === followingUsername
+          ? { ...following, categories: following.categories.filter(cat => cat.name !== category) }
+          : following
+        ),
+        _id: user!._id || '', // Ensure _id is not undefined
+        name: user!.name || '',
+        username: user!.username || '',
+        categories: user!.categories || [],
+      };
+      console.log("after",updatedUser)
+  
+      setUser(updatedUser);
+
+
+    }  catch (err) {
+      if (err instanceof Error) {
+        setErrorMessages({ ...errorMessages, [followingUsername]: err.message });
+      } else {
+        setErrorMessages({ ...errorMessages, [followingUsername]: 'An unknown error occurred.' });
+      }
+    }
+  };
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const term = e.target.value;
     setSearchTerm(term);
@@ -149,7 +190,7 @@ const Home: React.FC = () => {
                 onChange={(e) => setNewCategory({ ...newCategory, [following.username]: e.target.value })}
                 className="border p-2 rounded text-black mb-2"
               >
-                <option value="" disabled>Add a category</option>
+                <option value="" disabled>Select a category</option>
                 {user?.categories.map((category) => (
                   <option key={category.id} value={category.name}>
                     {category.name}
@@ -162,6 +203,12 @@ const Home: React.FC = () => {
               >
                 Add
               </button>
+              <button
+                  onClick={() => deleteCategoryOfAFollowing(following.username, newCategory[following.username])}
+                  className="bg-red-500 text-white p-2 rounded mt-2"
+                >
+                  Delete
+                </button>
               {errorMessages[following.username] && (
                     <div className="mt-4 p-2 bg-red-500 text-white rounded">
                       {errorMessages[following.username]}

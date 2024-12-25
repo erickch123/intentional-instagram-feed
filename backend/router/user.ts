@@ -452,7 +452,7 @@ router.patch('/categories/:username/', async (req: Request, res: Response) => {
   }
   try {
   
-    const user = await User.findOne({ username });
+    const user = await User.findOne({ username }).populate('categories', 'name');
 
     if (!user) {
       return res.status(404).json({ statusCode: 404, message: 'User not found' });
@@ -469,6 +469,7 @@ router.patch('/categories/:username/', async (req: Request, res: Response) => {
     // Check if the category is already associated with the user
     
 // Check if the category is already associated with the user
+console.log(user.categories)
 if (user.categories.some((cat) => cat.name === category.name)) {
   return res.status(400).json({ statusCode: 400, message: 'Category already exists' });
 }
@@ -678,43 +679,118 @@ router.delete('/categories/:username', async (req: Request, res: Response) => {
   }
 });
 
+/**
+ * @swagger
+ *  /users/categories/{username}/followings/{followingUsername}:
+     *     delete:
+     *       tags: [Users]
+     *       summary: Delete a category from a specific user's following
+     *       description: Deletes a category from a specific user's following list.
+     *       parameters:
+     *         - in: path
+     *           name: username
+     *           required: true
+     *           schema:
+     *             type: string
+     *           description: The username of the user
+     *         - in: path
+     *           name: followingUsername
+     *           required: true
+     *           schema:
+     *             type: string
+     *           description: The username of the following
+     *       requestBody:
+     *        required: true
+     *        content:
+     *          application/json:
+     *            schema:
+     *              type: object
+     *              properties:
+     *                category:
+     *                  type: string
+     *                  description: The category to delete from following  
+     *       responses:
+     *         '200':
+     *           description: Category deleted from following successfully
+     *           content:
+     *             application/json:
+     *               schema:
+     *                 type: object
+     *                 properties:
+     *                   statusCode:
+     *                     type: integer
+     *                     example: 200
+     *                   message:
+     *                     type: string
+     *                     example: Category deleted from following successfully
+     *                   data:
+     *                     $ref: '../model/User'
+     *         '404':
+     *           description: User or following or category not found
+     *           content:
+     *             application/json:
+     *               schema:
+     *                 type: object
+     *                 properties:
+     *                   statusCode:
+     *                     type: integer
+     *                     example: 404
+     *                   message:
+     *                     type: string
+     *                     example: User not found
+     *         '500':
+     *           description: Server error
+     *           content:
+     *             application/json:
+     *               schema:
+     *                 type: object
+     *                 properties:
+     *                   statusCode:
+     *                     type: integer
+     *                     example: 500
+     *                   message:
+     *                     type: string
+     *                     example: Server error
+ */
+router.delete('/categories/:username/followings/:followingUsername', async (req: Request, res: Response) => {
+  const { username, followingUsername } = req.params;
+  const { category } = req.body;
 
-// router.delete('/categories/:username/followings/:followingUsername', async (req: Request, res: Response) => {
-//   const { username, followingUsername } = req.params;
-//   const { category } = req.body;
+  try {
+    const user = await User.findOne({ username })
+      .populate('categories', 'name') // Populate user categories
+      .populate('followings.categories', 'name'); // Populate followings categories
+    
+    if (!user) {
+      return res.status(404).json({ statusCode: 404, message: 'User not found' });
+    }
 
-//   try {
-//     const user = await User.findOne({ username })
-//       .populate('categories', 'name') // Populate user categories
-//       .populate('followings.categories', 'name'); // Populate followings categories
-
-//     if (!user) {
-//       return res.status(404).json({ statusCode: 404, message: 'User not found' });
-//     }
-
-//     const following = user.followings.find(following => following.username === followingUsername);
-//     if (!following) {
-//       return res.status(404).json({ statusCode: 404, message: 'Following not found' });
-//     }
-
-//     const categoryIndex = following.categories.findIndex(cat => cat.name === category);
-//     if (categoryIndex === -1) {
-//       return res.status(404).json({ statusCode: 404, message: 'Category not found in following' });
-//     }
-
-//     const categoryId = following.categories[categoryIndex]._id as Types.ObjectId;
-//     following.categories.splice(categoryIndex, 1);
-
-//     await user.save();
-
-//     res.status(200).json({ statusCode: 200, message: 'Category deleted from following successfully' });
-//   } catch (error) {
-//     console.error('Error deleting category from following:', error);
-//     res.status(500).json({ statusCode: 500, message: 'Server error' });
-//   }
+    const following = user.followings.find(following => following.username === followingUsername);
+    if (!following) {
+      return res.status(404).json({ statusCode: 404, message: 'Following not found' });
+    }
 
 
-// });
+    console.log("following.categories", following.categories)
+    console.log("categories",category)
+    const categoryIndex = following.categories.findIndex((cat: any) => cat.name === category);
+    if (categoryIndex === -1) {
+      return res.status(404).json({ statusCode: 404, message: 'Category not found in following' });
+    }
+
+    const categoryId = following.categories[categoryIndex]._id as Types.ObjectId;
+    following.categories.splice(categoryIndex, 1);
+
+    await user.save();
+
+    res.status(200).json({ statusCode: 200, message: 'Category deleted from following successfully' });
+  } catch (error) {
+    console.error('Error deleting category from following:', error);
+    res.status(500).json({ statusCode: 500, message: 'Server error' });
+  }
+
+
+});
 
 
 

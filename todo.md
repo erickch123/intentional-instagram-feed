@@ -35,7 +35,8 @@ SEARCH IN THE HOMEPAGE IS HALFDONE
 
 
 bug
-LOL serach only works in the first page
-
-
 Now only the remove category of a user.following inside the following
+<!-- Add the error if adding duplicate category in category page -->
+
+
+<!-- DELETE WORKING BUT NOT THE REACTIVE STATE -->
